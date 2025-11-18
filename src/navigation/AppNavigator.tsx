@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { HomeScreen } from '../screens/HomeScreen';
+import { HomeScreen } from '../screens/HomeScreen-simple';
+// import { HomeScreen } from '../screens/HomeScreen'; // Complex version disabled
 // import { AppStoreScreen } from '../screens/AppStoreScreen';
 // import { QRScannerScreen } from '../screens/QRScannerScreen';
 // import { AppRunnerScreen } from '../screens/AppRunnerScreen';
