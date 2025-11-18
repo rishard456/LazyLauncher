@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { StorageService } from './storage';
 import { App, StoredApp, DownloadProgress, AppManifest } from '../types';
 import axios from 'axios';
