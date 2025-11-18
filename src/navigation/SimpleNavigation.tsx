@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
 
 interface NavigationContextType {
   currentScreen: string;
@@ -30,17 +30,18 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   const [currentScreen, setCurrentScreen] = useState(initialScreen);
   const [params, setParams] = useState<any>({});
   const [history, setHistory] = useState<string[]>([initialScreen]);
-  const [focusListeners, setFocusListeners] = useState<Map<string, Set<() => void>>>(new Map());
+
+  // Use ref to avoid re-renders
+  const focusListenersRef = useRef<Map<string, Set<() => void>>>(new Map());
 
   const navigate = (screen: string, navParams?: any) => {
-    const previousScreen = currentScreen;
     setCurrentScreen(screen);
     setParams(navParams || {});
     setHistory((prev) => [...prev, screen]);
 
     // Trigger focus listeners for the new screen
     setTimeout(() => {
-      const listeners = focusListeners.get(screen);
+      const listeners = focusListenersRef.current.get(screen);
       if (listeners) {
         listeners.forEach(callback => callback());
       }
@@ -57,7 +58,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
 
       // Trigger focus listeners for the previous screen
       setTimeout(() => {
-        const listeners = focusListeners.get(previousScreen);
+        const listeners = focusListenersRef.current.get(previousScreen);
         if (listeners) {
           listeners.forEach(callback => callback());
         }
@@ -67,13 +68,16 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
 
   const addListener = (event: string, callback: () => void) => {
     if (event === 'focus') {
-      const screenListeners = focusListeners.get(currentScreen) || new Set();
+      // Get or create listeners set for current screen
+      if (!focusListenersRef.current.has(currentScreen)) {
+        focusListenersRef.current.set(currentScreen, new Set());
+      }
+      const screenListeners = focusListenersRef.current.get(currentScreen)!;
       screenListeners.add(callback);
-      setFocusListeners(new Map(focusListeners).set(currentScreen, screenListeners));
 
       // Return unsubscribe function
       return () => {
-        const listeners = focusListeners.get(currentScreen);
+        const listeners = focusListenersRef.current.get(currentScreen);
         if (listeners) {
           listeners.delete(callback);
         }
