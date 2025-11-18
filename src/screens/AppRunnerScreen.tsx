@@ -30,7 +30,70 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
     navigation.navigate('Home');
   };
 
-  const appUrl = `${app.installedPath}index.html`;
+  // Load from LOCAL file system only - TRUE OFFLINE
+  const appUrl = `file://${app.installedPath}index.html`;
+
+  // Inject storage API for apps to persist data
+  const injectedJavaScript = `
+    (function() {
+      // Create LazyLauncher storage API
+      window.LazyStorage = {
+        save: function(key, value) {
+          try {
+            localStorage.setItem('${app.id}_' + key, JSON.stringify(value));
+            return true;
+          } catch (e) {
+            console.error('Storage save error:', e);
+            return false;
+          }
+        },
+        load: function(key) {
+          try {
+            const data = localStorage.getItem('${app.id}_' + key);
+            return data ? JSON.parse(data) : null;
+          } catch (e) {
+            console.error('Storage load error:', e);
+            return null;
+          }
+        },
+        remove: function(key) {
+          try {
+            localStorage.removeItem('${app.id}_' + key);
+            return true;
+          } catch (e) {
+            console.error('Storage remove error:', e);
+            return false;
+          }
+        },
+        clear: function() {
+          try {
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+              if (key.startsWith('${app.id}_')) {
+                localStorage.removeItem(key);
+              }
+            });
+            return true;
+          } catch (e) {
+            console.error('Storage clear error:', e);
+            return false;
+          }
+        }
+      };
+
+      // Add app info
+      window.LazyAppInfo = {
+        id: '${app.id}',
+        name: '${app.name}',
+        version: '${app.version}',
+        isOffline: true,
+        platform: 'LazyLauncher'
+      };
+
+      console.log('LazyLauncher Runtime: App loaded offline');
+    })();
+    true;
+  `;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -40,6 +103,7 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading {app.name}...</Text>
+          <Text style={styles.offlineBadge}>Running Offline</Text>
         </View>
       )}
 
@@ -48,7 +112,7 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>Failed to Load App</Text>
           <Text style={styles.errorText}>
-            There was an error loading {app.name}. Please try again.
+            Could not load {app.name} from local storage. The app may be corrupted.
           </Text>
         </View>
       )}
@@ -58,15 +122,25 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
         style={styles.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={() => setLoading(false)}
-        onError={() => {
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          console.error('WebView error:', nativeEvent);
           setLoading(false);
           setError(true);
         }}
-        javaScriptEnabled
-        domStorageEnabled
-        startInLoadingState
-        scalesPageToFit
-        allowsInlineMediaPlayback
+        injectedJavaScript={injectedJavaScript}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        scalesPageToFit={true}
+        allowsInlineMediaPlayback={true}
+        originWhitelist={['file://*', 'http://*', 'https://*']}
+        allowFileAccess={true}
+        allowFileAccessFromFileURLs={true}
+        allowUniversalAccessFromFileURLs={true}
+        mixedContentMode="always"
+        cacheEnabled={true}
+        incognito={false}
       />
 
       <FloatingHomeButton onPress={handleHomePress} visible={!loading} />
@@ -98,6 +172,15 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textMuted,
     marginTop: SPACING.md,
+  },
+  offlineBadge: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.success,
+    marginTop: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: 12,
   },
   errorContainer: {
     flex: 1,
