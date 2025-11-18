@@ -386,7 +386,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.95)',
-    backdropFilter: 'blur(20px)',
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderTopWidth: 1,
