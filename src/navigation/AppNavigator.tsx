@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '../screens/HomeScreen';
-import { AppStoreScreen } from '../screens/AppStoreScreen';
-import { QRScannerScreen } from '../screens/QRScannerScreen';
-import { AppRunnerScreen } from '../screens/AppRunnerScreen';
+// import { AppStoreScreen } from '../screens/AppStoreScreen';
+// import { QRScannerScreen } from '../screens/QRScannerScreen';
+// import { AppRunnerScreen } from '../screens/AppRunnerScreen';
 import { StorageService } from '../services/storage';
 import { COLORS } from '../constants/theme';
 
@@ -25,11 +25,12 @@ export function AppNavigator() {
         }}
         initialRouteName="Home"
       >
+        {/* TESTING: Add screens one by one to find the issue */}
         <Stack.Screen
           name="Home"
           component={HomeScreen}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="AppStore"
           component={AppStoreScreen}
         />
@@ -43,7 +44,7 @@ export function AppNavigator() {
         <Stack.Screen
           name="AppRunner"
           component={AppRunnerScreen}
-        />
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
