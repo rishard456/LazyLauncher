@@ -1,34 +1,43 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useEffect } from 'react';
+import { NavigationProvider, useNavigation } from './SimpleNavigation';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
+import { HomeScreen } from '../screens/HomeScreen';
+import { AppStoreScreen } from '../screens/AppStoreScreen';
+import { QRScannerScreen } from '../screens/QRScannerScreen';
+import { AppRunnerScreen } from '../screens/AppRunnerScreen';
+import { StorageService } from '../services/storage';
 
-const Stack = createNativeStackNavigator();
+function NavigationRouter() {
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    StorageService.initialize();
+  }, []);
+
+  const renderScreen = () => {
+    switch (navigation.currentScreen) {
+      case 'Welcome':
+        return <WelcomeScreen navigation={navigation} />;
+      case 'Home':
+        return <HomeScreen navigation={navigation} />;
+      case 'AppStore':
+        return <AppStoreScreen navigation={navigation} />;
+      case 'QRScanner':
+        return <QRScannerScreen navigation={navigation} />;
+      case 'AppRunner':
+        return <AppRunnerScreen navigation={navigation} route={{ params: navigation.params }} />;
+      default:
+        return <WelcomeScreen navigation={navigation} />;
+    }
+  };
+
+  return <>{renderScreen()}</>;
+}
 
 export function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen
-          name="Welcome"
-          component={WelcomeScreen}
-        />
-        {/* <Stack.Screen
-          name="AppStore"
-          component={AppStoreScreen}
-        />
-        <Stack.Screen
-          name="QRScanner"
-          component={QRScannerScreen}
-          options={{
-            presentation: 'modal',
-          }}
-        />
-        <Stack.Screen
-          name="AppRunner"
-          component={AppRunnerScreen}
-        /> */}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <NavigationProvider initialScreen="Home">
+      <NavigationRouter />
+    </NavigationProvider>
   );
 }

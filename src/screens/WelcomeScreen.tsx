@@ -24,7 +24,7 @@ export const WelcomeScreen: React.FC<Props> = ({ navigation }) => {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => alert('Welcome to LazyLauncher!\n\nOther screens are currently disabled for debugging.')}
+          onPress={() => navigation.navigate('Home')}
         >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>
