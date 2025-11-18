@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { HomeScreen } from '../screens/HomeScreen';
-import { AppStoreScreen } from '../screens/AppStoreScreen';
-import { QRScannerScreen } from '../screens/QRScannerScreen';
-import { AppRunnerScreen } from '../screens/AppRunnerScreen';
+import { WelcomeScreen } from '../screens/WelcomeScreen';
+// import { HomeScreen } from '../screens/HomeScreen';
+// import { AppStoreScreen } from '../screens/AppStoreScreen';
+// import { QRScannerScreen } from '../screens/QRScannerScreen';
+// import { AppRunnerScreen } from '../screens/AppRunnerScreen';
 import { StorageService } from '../services/storage';
 import { COLORS } from '../constants/theme';
 
@@ -23,9 +24,14 @@ export function AppNavigator() {
           headerShown: false,
           contentStyle: { backgroundColor: COLORS.background },
         }}
-        initialRouteName="Home"
+        initialRouteName="Welcome"
       >
         <Stack.Screen
+          name="Welcome"
+          component={WelcomeScreen}
+        />
+        {/* COMMENTED OUT FOR DEBUGGING - ADD BACK ONE BY ONE */}
+        {/* <Stack.Screen
           name="Home"
           component={HomeScreen}
         />
@@ -43,7 +49,7 @@ export function AppNavigator() {
         <Stack.Screen
           name="AppRunner"
           component={AppRunnerScreen}
-        />
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
