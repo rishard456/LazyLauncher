@@ -28,7 +28,7 @@ export const FloatingHomeButton: React.FC<Props> = ({ onPress, visible = true })
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 20,
     right: FLOATING_BUTTON_MARGIN,
     width: FLOATING_BUTTON_SIZE,
     height: FLOATING_BUTTON_SIZE,

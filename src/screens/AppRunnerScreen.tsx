@@ -6,6 +6,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { FloatingHomeButton } from '../components/FloatingHomeButton';
@@ -25,6 +26,7 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
   const { app } = route.params;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleHomePress = () => {
     navigation.navigate('Home');
@@ -32,6 +34,8 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
 
   // Load from LOCAL file system only - TRUE OFFLINE
   const appUrl = `file://${app.installedPath}index.html`;
+
+  console.log('Loading app from:', appUrl);
 
   // Inject storage API for apps to persist data
   const injectedJavaScript = `
@@ -99,7 +103,7 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
-      {loading && (
+      {loading && !error && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading {app.name}...</Text>
@@ -107,38 +111,59 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       )}
 
-      {error && (
+      {error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={styles.errorTitle}>Failed to Load App</Text>
           <Text style={styles.errorText}>
-            Could not load {app.name} from local storage. The app may be corrupted.
+            Could not load {app.name} from local storage. {errorMsg || 'The app may be corrupted.'}
           </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setError(false);
+              setLoading(true);
+            }}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
         </View>
+      ) : (
+        <WebView
+          source={{ uri: appUrl }}
+          style={styles.webview}
+          onLoadStart={() => {
+            console.log('WebView load started');
+            setLoading(true);
+          }}
+          onLoadEnd={() => {
+            console.log('WebView load ended');
+            setLoading(false);
+          }}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.error('WebView error:', nativeEvent);
+            setErrorMsg(nativeEvent.description || 'Unknown error');
+            setLoading(false);
+            setError(true);
+          }}
+          onHttpError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.error('WebView HTTP error:', nativeEvent);
+          }}
+          injectedJavaScript={injectedJavaScript}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={false}
+          allowsInlineMediaPlayback={true}
+          originWhitelist={['file://*', 'http://*', 'https://*']}
+          allowFileAccess={true}
+          cacheEnabled={false}
+          mixedContentMode="always"
+        />
       )}
 
-      <WebView
-        source={{ uri: appUrl }}
-        style={styles.webview}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        onError={(syntheticEvent) => {
-          const { nativeEvent } = syntheticEvent;
-          console.error('WebView error:', nativeEvent);
-          setLoading(false);
-          setError(true);
-        }}
-        injectedJavaScript={injectedJavaScript}
-        javaScriptEnabled
-        domStorageEnabled
-        startInLoadingState
-        allowsInlineMediaPlayback
-        originWhitelist={['file://*', 'http://*', 'https://*']}
-        allowFileAccess
-        cacheEnabled
-      />
-
-      <FloatingHomeButton onPress={handleHomePress} visible={!loading} />
+      <FloatingHomeButton onPress={handleHomePress} visible={true} />
     </SafeAreaView>
   );
 };
@@ -196,5 +221,17 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textMuted,
     textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+  },
+  retryText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.white,
+    fontWeight: '600',
   },
 });

@@ -25,13 +25,16 @@ const ICON_SIZE = (SCREEN_WIDTH - SPACING.xl * 2) / ICONS_PER_ROW - SPACING.md;
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [installedApps, setInstalledApps] = useState<StoredApp[]>([]);
+  const [filteredApps, setFilteredApps] = useState<StoredApp[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'recent'>('recent');
 
   const loadInstalledApps = useCallback(async () => {
     try {
       const apps = await AppManager.getInstalledApps();
       setInstalledApps(apps);
+      setFilteredApps(apps);
     } catch (error) {
       console.error('Failed to load installed apps:', error);
     }
@@ -40,20 +43,29 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     loadInstalledApps();
 
-    // Update time every minute
-    const timeInterval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-
     const unsubscribe = navigation.addListener('focus', () => {
       loadInstalledApps();
     });
 
     return () => {
-      clearInterval(timeInterval);
       unsubscribe();
     };
   }, [navigation, loadInstalledApps]);
+
+  useEffect(() => {
+    // Filter and sort apps
+    let filtered = installedApps.filter(app =>
+      app.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (sortBy === 'name') {
+      filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      filtered = filtered.sort((a, b) => b.installedAt - a.installedAt);
+    }
+
+    setFilteredApps(filtered);
+  }, [searchQuery, sortBy, installedApps]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -70,20 +82,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate('AppInfo', { app });
   };
 
-  const formatTime = () => {
-    return currentTime.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
-
-  const formatDate = () => {
-    return currentTime.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
+  const toggleSort = () => {
+    setSortBy(sortBy === 'name' ? 'recent' : 'name');
   };
 
   const renderAppIcon = (app: StoredApp) => (
@@ -133,15 +133,23 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
-      {/* Status Bar */}
-      <View style={styles.statusBar}>
-        <View style={styles.statusLeft}>
-          <Text style={styles.statusTime}>{formatTime()}</Text>
-        </View>
-        <View style={styles.statusRight}>
-          <Text style={styles.statusIcon}>📶</Text>
-          <Text style={styles.statusIcon}>📡</Text>
-          <Text style={styles.statusIcon}>🔋</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>LazyLauncher</Text>
+        <TouchableOpacity onPress={toggleSort} style={styles.filterButton}>
+          <Text style={styles.filterIcon}>
+            {sortBy === 'name' ? '🔤' : '🕐'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <Text style={styles.searchInput} onPress={() => {/* Focus on input */}}>
+            {searchQuery || 'Search apps...'}
+          </Text>
         </View>
       </View>
 
@@ -157,27 +165,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           />
         }
       >
-        {/* Clock Widget */}
-        <View style={styles.clockWidget}>
-          <Text style={styles.clockTime}>{formatTime()}</Text>
-          <Text style={styles.clockDate}>{formatDate()}</Text>
-        </View>
-
-        {/* Search Bar */}
-        <TouchableOpacity
-          style={styles.searchBar}
-          onPress={() => {
-            /* Add search functionality */
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.searchIcon}>🔍</Text>
-          <Text style={styles.searchText}>Search apps...</Text>
-        </TouchableOpacity>
-
         {/* Apps Grid */}
         <View style={styles.appsContainer}>
-          {installedApps.length === 0 ? (
+          {filteredApps.length === 0 && installedApps.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📱</Text>
               <Text style={styles.emptyText}>No apps installed</Text>
@@ -185,9 +175,17 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 Open the Store to discover apps
               </Text>
             </View>
+          ) : filteredApps.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>🔍</Text>
+              <Text style={styles.emptyText}>No apps found</Text>
+              <Text style={styles.emptySubtext}>
+                Try a different search term
+              </Text>
+            </View>
           ) : (
             <View style={styles.appsGrid}>
-              {installedApps.map(renderAppIcon)}
+              {filteredApps.map(renderAppIcon)}
             </View>
           )}
 
@@ -252,56 +250,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  statusBar: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    paddingBottom: SPACING.xs,
+    paddingVertical: SPACING.md,
   },
-  statusLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  statusTime: {
+  title: {
     color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
   },
-  statusIcon: {
-    fontSize: 12,
+  filterButton: {
+    padding: SPACING.sm,
+    backgroundColor: COLORS.backgroundCard,
+    borderRadius: 12,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 100,
+  filterIcon: {
+    fontSize: 20,
   },
-  clockWidget: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl,
-  },
-  clockTime: {
-    fontSize: 72,
-    fontWeight: '200',
-    color: COLORS.text,
-    letterSpacing: -2,
-  },
-  clockDate: {
-    fontSize: 18,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+  searchContainer: {
+    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.backgroundCard,
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.lg,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     borderRadius: 24,
@@ -310,9 +286,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginRight: SPACING.sm,
   },
-  searchText: {
+  searchInput: {
     color: COLORS.textMuted,
     fontSize: 16,
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 100,
   },
   appsContainer: {
     paddingHorizontal: SPACING.md,
