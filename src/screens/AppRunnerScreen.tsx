@@ -129,18 +129,13 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
           setError(true);
         }}
         injectedJavaScript={injectedJavaScript}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        startInLoadingState={true}
-        scalesPageToFit={true}
-        allowsInlineMediaPlayback={true}
+        javaScriptEnabled
+        domStorageEnabled
+        startInLoadingState
+        allowsInlineMediaPlayback
         originWhitelist={['file://*', 'http://*', 'https://*']}
-        allowFileAccess={true}
-        allowFileAccessFromFileURLs={true}
-        allowUniversalAccessFromFileURLs={true}
-        mixedContentMode="always"
-        cacheEnabled={true}
-        incognito={false}
+        allowFileAccess
+        cacheEnabled
       />
 
       <FloatingHomeButton onPress={handleHomePress} visible={!loading} />
