@@ -5,12 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Dimensions,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StoredApp } from '../types';
 import { AppManager } from '../services/appManager';
 import { COLORS, SPACING } from '../constants/theme';
