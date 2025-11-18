@@ -1,6 +1,7 @@
 import React from 'react';
-import { AppNavigator } from './src/navigation/AppNavigator';
+import { WelcomeScreen } from './src/screens/WelcomeScreen';
 
 export default function App() {
-  return <AppNavigator />;
+  // NO NAVIGATION - Direct component render
+  return <WelcomeScreen navigation={null} />;
 }
