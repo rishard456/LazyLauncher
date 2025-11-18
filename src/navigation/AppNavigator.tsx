@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { HomeScreen } from '../screens/HomeScreen-simple';
+import { WelcomeScreen } from '../screens/WelcomeScreen';
+// import { HomeScreen } from '../screens/HomeScreen-simple';
 // import { HomeScreen } from '../screens/HomeScreen'; // Complex version disabled
 // import { AppStoreScreen } from '../screens/AppStoreScreen';
 // import { QRScannerScreen } from '../screens/QRScannerScreen';
@@ -26,10 +27,10 @@ export function AppNavigator() {
         }}
         initialRouteName="Home"
       >
-        {/* TESTING: Add screens one by one to find the issue */}
+        {/* TESTING: Using WelcomeScreen as Home to see if route name matters */}
         <Stack.Screen
           name="Home"
-          component={HomeScreen}
+          component={WelcomeScreen}
         />
         {/* <Stack.Screen
           name="AppStore"
