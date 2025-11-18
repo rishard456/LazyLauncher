@@ -8,7 +8,8 @@ import {
   PanResponder,
   Dimensions,
 } from 'react-native';
-import { COLORS, FLOATING_BUTTON_SIZE, FLOATING_BUTTON_MARGIN } from '../constants';
+import { COLORS } from '../constants/theme';
+import { FLOATING_BUTTON_SIZE, FLOATING_BUTTON_MARGIN } from '../constants';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
