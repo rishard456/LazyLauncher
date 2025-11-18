@@ -131,7 +131,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
 
       {/* Status Bar */}
       <View style={styles.statusBar}>
