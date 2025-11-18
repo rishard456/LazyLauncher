@@ -28,31 +28,21 @@ export function AppNavigator() {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{
-            animation: 'fade',
-          }}
         />
         <Stack.Screen
           name="AppStore"
           component={AppStoreScreen}
-          options={{
-            animation: 'slide_from_right',
-          }}
         />
         <Stack.Screen
           name="QRScanner"
           component={QRScannerScreen}
           options={{
             presentation: 'modal',
-            animation: 'slide_from_bottom',
           }}
         />
         <Stack.Screen
           name="AppRunner"
           component={AppRunnerScreen}
-          options={{
-            animation: 'slide_from_right',
-          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
