@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import * as FileSystem from 'expo-file-system/legacy';
 import { FloatingHomeButton } from '../components/FloatingHomeButton';
 import { StoredApp } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
@@ -27,15 +28,40 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
 
   const handleHomePress = () => {
     navigation.navigate('Home');
   };
 
-  // Load from LOCAL file system only - TRUE OFFLINE
-  const appUrl = `file://${app.installedPath}index.html`;
+  // Load HTML content from local file system
+  useEffect(() => {
+    const loadAppContent = async () => {
+      try {
+        const htmlPath = `${app.installedPath}index.html`;
+        console.log('Loading app from:', htmlPath);
 
-  console.log('Loading app from:', appUrl);
+        // Check if file exists
+        const fileInfo = await FileSystem.getInfoAsync(htmlPath);
+        if (!fileInfo.exists) {
+          throw new Error('App file not found');
+        }
+
+        // Read the HTML content
+        const content = await FileSystem.readAsStringAsync(htmlPath);
+        console.log('App content loaded, length:', content.length);
+        setHtmlContent(content);
+        setError(false);
+      } catch (err: any) {
+        console.error('Failed to load app content:', err);
+        setErrorMsg(err.message || 'Failed to load app');
+        setError(true);
+        setLoading(false);
+      }
+    };
+
+    loadAppContent();
+  }, [app]);
 
   // Inject storage API for apps to persist data
   const injectedJavaScript = `
@@ -128,9 +154,12 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
-      ) : (
+      ) : htmlContent ? (
         <WebView
-          source={{ uri: appUrl }}
+          source={{
+            html: htmlContent,
+            baseUrl: `file://${app.installedPath}`
+          }}
           style={styles.webview}
           onLoadStart={() => {
             console.log('WebView load started');
@@ -156,12 +185,13 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
           domStorageEnabled={true}
           startInLoadingState={false}
           allowsInlineMediaPlayback={true}
-          originWhitelist={['file://*', 'http://*', 'https://*']}
+          originWhitelist={['*']}
           allowFileAccess={true}
+          allowUniversalAccessFromFileURLs={true}
           cacheEnabled={false}
           mixedContentMode="always"
         />
-      )}
+      ) : null}
 
       <FloatingHomeButton onPress={handleHomePress} visible={true} />
     </SafeAreaView>
