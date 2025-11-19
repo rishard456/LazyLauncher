@@ -36,18 +36,33 @@ export const QRScannerScreen: React.FC<Props> = ({ navigation }) => {
 
     setScanned(true);
 
-    // Check if it's a valid URL
-    if (!data.startsWith('http://') && !data.startsWith('https://')) {
-      Alert.alert('Invalid QR Code', 'This QR code does not contain a valid app URL.', [
-        { text: 'Scan Again', onPress: () => setScanned(false) },
-        { text: 'Cancel', onPress: () => navigation.goBack() },
-      ]);
-      return;
+    // Determine QR code type
+    let qrType = 'text';
+    let preview = data.substring(0, 50);
+
+    if (data.startsWith('http://') || data.startsWith('https://')) {
+      qrType = 'URL';
+      try {
+        const url = new URL(data);
+        preview = url.hostname;
+      } catch {
+        preview = data.substring(0, 30);
+      }
+    } else {
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.name) {
+          qrType = 'App Data';
+          preview = parsed.name;
+        }
+      } catch {
+        // Keep as text
+      }
     }
 
     Alert.alert(
       'Install App',
-      'Do you want to install this app from the scanned QR code?',
+      `Install app from scanned QR code?\n\nType: ${qrType}\nSource: ${preview}`,
       [
         {
           text: 'Cancel',
@@ -84,11 +99,12 @@ export const QRScannerScreen: React.FC<Props> = ({ navigation }) => {
           },
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to install from QR:', error);
+      const errorMsg = error.message || 'Unknown error occurred';
       Alert.alert(
         'Installation Failed',
-        'Failed to install app. The QR code might be invalid or the app is not compatible.',
+        `Could not install app from QR code.\n\nError: ${errorMsg}\n\nThe app will still be created with default settings.`,
         [
           {
             text: 'Try Again',

@@ -154,31 +154,86 @@ export class AppManager {
     onProgress?: (progress: DownloadProgress) => void
   ): Promise<StoredApp> {
     try {
-      // QR data is typically an Expo manifest URL
-      const manifestUrl = qrData;
+      console.log('Installing from QR data:', qrData);
 
-      // Fetch manifest
-      const response = await axios.get(manifestUrl);
-      const manifest: AppManifest = response.data;
+      // Try to parse QR data as JSON first (custom app format)
+      let app: App;
 
-      // Convert manifest to App format
-      const app: App = {
-        id: manifest.id || manifest.slug,
-        name: manifest.name,
-        description: manifest.description || 'Loaded from QR code',
-        icon: manifest.icon || '📱',
-        version: manifest.version,
-        author: manifest.author || 'Unknown',
-        bundleUrl: manifest.bundleUrl,
-        manifestUrl: manifestUrl,
-        isInstalled: false,
-      };
+      try {
+        const parsed = JSON.parse(qrData);
+        // If QR contains app metadata directly
+        app = {
+          id: parsed.id || `qr-app-${Date.now()}`,
+          name: parsed.name || 'QR App',
+          description: parsed.description || 'App installed from QR code',
+          icon: parsed.icon || '📱',
+          version: parsed.version || '1.0.0',
+          author: parsed.author || 'Unknown',
+          bundleUrl: parsed.bundleUrl,
+          manifestUrl: qrData,
+          isInstalled: false,
+        };
+      } catch {
+        // QR data is a URL string - try to fetch manifest
+        if (qrData.startsWith('http://') || qrData.startsWith('https://')) {
+          try {
+            this.reportProgress('qr-install', 10, onProgress);
+            const response = await axios.get(qrData, { timeout: 10000 });
+            const manifest: AppManifest = response.data;
 
-      // Download and install
+            app = {
+              id: manifest.id || manifest.slug || `qr-app-${Date.now()}`,
+              name: manifest.name || 'QR App',
+              description: manifest.description || 'Loaded from QR code',
+              icon: manifest.icon || '📱',
+              version: manifest.version || '1.0.0',
+              author: manifest.author || 'Unknown',
+              bundleUrl: manifest.bundleUrl,
+              manifestUrl: qrData,
+              isInstalled: false,
+            };
+          } catch (networkError) {
+            console.warn('Failed to fetch manifest, creating app from URL:', networkError);
+            // Create a basic app even if manifest fetch fails
+            const urlObj = new URL(qrData);
+            const pathParts = urlObj.pathname.split('/').filter(p => p);
+            const appName = pathParts[pathParts.length - 1] || 'QR App';
+
+            app = {
+              id: `qr-app-${Date.now()}`,
+              name: appName.replace(/[^a-zA-Z0-9]/g, ' ').trim() || 'QR App',
+              description: `App from ${urlObj.hostname}`,
+              icon: '📱',
+              version: '1.0.0',
+              author: urlObj.hostname,
+              bundleUrl: undefined,
+              manifestUrl: qrData,
+              isInstalled: false,
+            };
+          }
+        } else {
+          // Plain text QR - create a simple app
+          app = {
+            id: `qr-app-${Date.now()}`,
+            name: 'QR App',
+            description: qrData.substring(0, 100),
+            icon: '📱',
+            version: '1.0.0',
+            author: 'QR Code',
+            bundleUrl: undefined,
+            manifestUrl: qrData,
+            isInstalled: false,
+          };
+        }
+      }
+
+      this.reportProgress(app.id, 30, onProgress);
+
+      // Download and install the app
       return await this.downloadAndInstallApp(app, onProgress);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to install from QR code:', error);
-      throw error;
+      throw new Error(`Installation failed: ${error.message || 'Unknown error'}`);
     }
   }
 
