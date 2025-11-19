@@ -63,67 +63,8 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
     loadAppContent();
   }, [app]);
 
-  // Inject storage API for apps to persist data
-  const injectedJavaScript = `
-    (function() {
-      // Create LazyLauncher storage API
-      window.LazyStorage = {
-        save: function(key, value) {
-          try {
-            localStorage.setItem('${app.id}_' + key, JSON.stringify(value));
-            return true;
-          } catch (e) {
-            console.error('Storage save error:', e);
-            return false;
-          }
-        },
-        load: function(key) {
-          try {
-            const data = localStorage.getItem('${app.id}_' + key);
-            return data ? JSON.parse(data) : null;
-          } catch (e) {
-            console.error('Storage load error:', e);
-            return null;
-          }
-        },
-        remove: function(key) {
-          try {
-            localStorage.removeItem('${app.id}_' + key);
-            return true;
-          } catch (e) {
-            console.error('Storage remove error:', e);
-            return false;
-          }
-        },
-        clear: function() {
-          try {
-            const keys = Object.keys(localStorage);
-            keys.forEach(key => {
-              if (key.startsWith('${app.id}_')) {
-                localStorage.removeItem(key);
-              }
-            });
-            return true;
-          } catch (e) {
-            console.error('Storage clear error:', e);
-            return false;
-          }
-        }
-      };
-
-      // Add app info
-      window.LazyAppInfo = {
-        id: '${app.id}',
-        name: '${app.name}',
-        version: '${app.version}',
-        isOffline: true,
-        platform: 'LazyLauncher'
-      };
-
-      console.log('LazyLauncher Runtime: App loaded offline');
-    })();
-    true;
-  `;
+  // Apps now have built-in APIs from BundleExecutor
+  // No need for injected JavaScript
 
   return (
     <SafeAreaView style={styles.container}>
@@ -180,7 +121,6 @@ export const AppRunnerScreen: React.FC<Props> = ({ navigation, route }) => {
             const { nativeEvent } = syntheticEvent;
             console.error('WebView HTTP error:', nativeEvent);
           }}
-          injectedJavaScript={injectedJavaScript}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           startInLoadingState={false}

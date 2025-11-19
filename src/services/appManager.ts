@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { StorageService } from './storage';
+import { BundleExecutor } from './bundleExecutor';
 import { App, StoredApp, DownloadProgress, AppManifest } from '../types';
 import axios from 'axios';
 
@@ -79,8 +80,20 @@ export class AppManager {
 
       this.reportProgress(app.id, 70, onProgress);
 
-      // Step 4: Create complete standalone HTML app
-      const appContent = this.generateCompleteAppContent(app);
+      // Step 4: Create complete React app with BundleExecutor
+      const storedApp: StoredApp = {
+        id: app.id,
+        name: app.name,
+        description: app.description,
+        icon: app.icon,
+        version: app.version,
+        author: app.author,
+        installedPath: appDir,
+        installedAt: Date.now(),
+        size: 0,
+        manifestUrl: app.manifestUrl,
+      };
+      const appContent = await BundleExecutor.createAppPackage(storedApp);
       await FileSystem.writeAsStringAsync(`${appDir}index.html`, appContent);
 
       // Step 5: Create app-specific data directory for persistent storage
@@ -107,19 +120,8 @@ export class AppManager {
 
       this.reportProgress(app.id, 100, onProgress);
 
-      // Save to installed apps
-      const storedApp: StoredApp = {
-        id: app.id,
-        name: app.name,
-        description: app.description,
-        icon: app.icon,
-        version: app.version,
-        author: app.author,
-        installedPath: appDir,
-        installedAt: Date.now(),
-        size: totalSize || 1000000,
-        manifestUrl: app.manifestUrl,
-      };
+      // Update stored app with final size
+      storedApp.size = totalSize || 1000000;
 
       await StorageService.saveInstalledApp(storedApp);
 
@@ -197,107 +199,5 @@ export class AppManager {
   static async isAppInstalled(appId: string): Promise<boolean> {
     const installedApps = await this.getInstalledApps();
     return installedApps.some((app) => app.id === appId);
-  }
-
-  private static generateCompleteAppContent(app: App): string {
-    return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${app.name}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: white;
-        }
-        .container {
-            max-width: 600px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        .icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-        h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-        .version {
-            opacity: 0.8;
-            margin-bottom: 20px;
-        }
-        p {
-            font-size: 18px;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-        .info {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .info-row:last-child {
-            border-bottom: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="icon">${app.icon}</div>
-        <h1>${app.name}</h1>
-        <div class="version">Version ${app.version}</div>
-        <p>${app.description}</p>
-        <div class="info">
-            <div class="info-row">
-                <span>Author:</span>
-                <span>${app.author}</span>
-            </div>
-            <div class="info-row">
-                <span>Status:</span>
-                <span>Running in LazyLauncher</span>
-            </div>
-            <div class="info-row">
-                <span>Launch Time:</span>
-                <span id="time"></span>
-            </div>
-        </div>
-    </div>
-    <script>
-        document.getElementById('time').textContent = new Date().toLocaleTimeString();
-        setInterval(() => {
-            document.getElementById('time').textContent = new Date().toLocaleTimeString();
-        }, 1000);
-    </script>
-</body>
-</html>
-    `.trim();
   }
 }
